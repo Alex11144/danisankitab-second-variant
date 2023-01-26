@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:danisankitab/booknode.dart';
+import 'package:danisankitab/home_page.dart';
 import 'package:danisankitab/player_page_tts.dart';
 import 'package:danisankitab/selector_page.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ class SelectorPageTts extends StatefulWidget {
 class _SelectorPageTtsState extends State<SelectorPageTts>
     with WidgetsBindingObserver {
   int selectedItem = 0;
+//  var myAudioHandler = MyAudioHandler();
 
   AudioPlayer _player = AudioPlayer();
 
@@ -35,6 +37,7 @@ class _SelectorPageTtsState extends State<SelectorPageTts>
   void initState() {
     super.initState();
     _player = AudioPlayer();
+// myAudioHandler.
     final player = ConcatenatingAudioSource(children: [
       AudioSource.uri(Uri.parse('asset:///assets/categories.mp3')),
       if (!isPlayedNavinfo)

@@ -6,6 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:danisankitab/selector_page.dart';
 import 'package:danisankitab/selector_page_tts.dart';
 import 'package:danisankitab/sliding_segmented_control.dart';
+import 'package:danisankitab/splash_screen.dart';
 import 'package:flutter/cupertino.dart' as cupertino;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -20,6 +21,27 @@ import 'booknode.dart';
 
 const descText =
     "Azərbaycan Respublikası Əmək və Əhalinin Sosial Müdafiəsi Nazirliyinin sosial sifarişi ilə bu kitabların səsləndirilməsi təşkil edilmişdir.";
+
+class MyAudioHandler extends BaseAudioHandler {
+  final _player = AudioPlayer();
+  final _playlist = ConcatenatingAudioSource(children: []);
+
+  MyAudioHandler() {
+    _loadEmptyPlaylist();
+    // _notifyAudioHandlerAboutPlaybackEvents();
+    // _listenForDurationChanges();
+    // _listenForCurrentSongIndexChanges();
+    // _listenForSequenceStateChanges();
+  }
+
+  Future<void> _loadEmptyPlaylist() async {
+    try {
+      await _player.setAudioSource(_playlist);
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+}
 
 class HomePage extends StatefulWidget {
   final List<BookNode> bookNodes;
@@ -41,7 +63,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool ttsMode = true;
   bool requireDownload = false;
   AudioPlayer plyr;
-
+  final myAudioHandler = MyAudioHandler();
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     print(state);
@@ -49,8 +71,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         state == AppLifecycleState.paused) {
       if (plyr != null) {
         plyr.stop();
+        myAudioHandler._player.stop();
         // plyr.dispose();
         // plyr = null;
+
       }
     }
   }
@@ -76,20 +100,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> playTts(bool withWelcome) async {
-    final player = ConcatenatingAudioSource(
-        children: withWelcome
-            ? [
-                AudioSource.uri(Uri.parse('asset:///assets/welcome.mp3')),
-                AudioSource.uri(Uri.parse('asset:///assets/nazirlikinfo.mp3')),
-                AudioSource.uri(
-                    Uri.parse('asset:///assets/entertocategories.mp3'))
-              ]
-            : [
-                AudioSource.uri(
-                    Uri.parse('asset:///assets/entertocategories.mp3'))
-              ]);
+    final queue = [
+      AudioSource.uri(Uri.parse('asset:///assets/welcome.mp3')),
+      AudioSource.uri(Uri.parse('asset:///assets/nazirlikinfo.mp3')),
+      AudioSource.uri(Uri.parse('asset:///assets/entertocategories.mp3'))
+    ];
+    final queue2 = [
+      AudioSource.uri(Uri.parse('asset:///assets/entertocategories.mp3'))
+    ];
+    myAudioHandler._playlist.addAll(withWelcome ? queue : queue2);
+    await myAudioHandler._loadEmptyPlaylist();
+    // final player = ConcatenatingAudioSource(
+    //     children: withWelcome
+    //         ? [
+    //             AudioSource.uri(Uri.parse('asset:///assets/welcome.mp3')),
+    //             AudioSource.uri(Uri.parse('asset:///assets/nazirlikinfo.mp3')),
+    //             AudioSource.uri(
+    //                 Uri.parse('asset:///assets/entertocategories.mp3'))
+    //           ]
+    //         : [
+    //             AudioSource.uri(
+    //                 Uri.parse('asset:///assets/entertocategories.mp3'))
+    //           ]);
 
-    await plyr.setAudioSource(player);
+    // await plyr.setAudioSource(player);
 
     // await plyr.setAudioSource(
     //   AudioSource.uri(Uri.parse('asset:///assets/welcome.mp3')),
@@ -109,7 +143,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     //             AudioSource.uri(
     //                 Uri.parse('asset:///assets/entertocategories.mp3'))
     //           ]));
-    await plyr.play();
+    // await plyr.play();
+    await myAudioHandler._player.play();
   }
 
   @override
@@ -134,6 +169,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             onDoubleTap: () async {
               if (ttsMode) {
                 plyr.stop();
+                myAudioHandler._player.stop();
                 await Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) =>
                         SelectorPageTts(bookNodes: widget.bookNodes)));
